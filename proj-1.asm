@@ -10,10 +10,7 @@ Array:
 # any unlisted registers are unused
 
 # s0 = array pointer
-# s1 = 100 = array size - used for < 100
-# s2 = 101 = array size +1 - used for <= 100
-# s3 = current selected prime number
-# s4 = store 1
+# s1 = current selected prime number
 
 # t0 = boolean for any while loops
 # t1 = iterator
@@ -26,30 +23,27 @@ Array:
 main:
 	#main execution starts here
 	la		$s0,	Array
-	addi	$s1,	$zero,	100
-	addi	$s2,	$s1,	1
-	addi	$s3,	$zero,	2
-	addi	$s4,	$zero,	1
+	addi	$s1,	$zero,	2
 
 	# initialize array to 1-100
-	add 	$t2,	$s0,	$zero
-	add		$t1,	$s4,	$zero
+	addi 	$t2,	$s0,	0				# copy array pointer
+	addi	$t1,	$zero,	1				# i = 1
 
-	bne		$zero,	$s1,	inittest
+	bne		$zero,	$s1,	inittest		# enter loop
 	initloop:
-		sw 		$t1,	0($t2)
-		addi 	$t2,	$t2,	4
-		addi 	$t1,	$t1,	1
+		sw 		$t1,	0($t2)				# grab array[i]
+		addi 	$t2,	$t2,	4			# prepare for indexing - next array element
+		addi 	$t1,	$t1,	1			# # i++;
 	inittest:
-		slt 	$t0,	$t1,	$s2
-		bne 	$t0,	$zero,	initloop
+		slti	$t0,	$t1,	101			# i <= 100
+		bne 	$t0,	$zero,	initloop	# while (i <= 100)
 	
 		bne		$zero,	$s1,	maintest	# enter loop
 	mainloop:
 		# body of main while loop
 
 		# start of sieve
-			add		$t1,	$s3,	$s3			# i = prime + prime
+			sll		$t1,	$s1,	1			# i = prime * 2
 			bne		$zero,	$s1,	sievetest	# enter loop
 		sieveloop:
 			# body of sieve while loop
@@ -57,16 +51,16 @@ main:
 			sll 	$t2,	$t2,	2			# prepare for indexing
 			add		$t2,	$s0,	$t2			# array[i-1]
 			sw		$zero,	0($t2) 				# array[i-1] = 0
-			add		$t1,	$t1,	$s3			# i = i + prime
+			add		$t1,	$t1,	$s1			# i = i + prime
 		sievetest:
-			slt		$t0,	$t1,	$s2			# i <= 100
+			slti	$t0,	$t1,	101			# i <= 100
 			bne		$t0,	$zero,	sieveloop	# while (i <= 100)
 		# end of sieve
 
 
 		# start of prime finding
-			add		$t1,	$zero,	$s3			# i = 0 + prime
-			add		$t2,	$zero,	$t1			# copy iterator
+			addi	$t1,	$s1,	0			# i = 0 + prime
+			addi	$t2,	$t1,	0			# copy iterator
 			sll 	$t2,	$t2,	2			# prepare for indexing
 			add		$t2,	$s0,	$t2			# array[i] index
 			bne 	$zero,	$s1,	primetest	# enter loop
@@ -75,17 +69,17 @@ main:
 			addi	$t2,	$t2,	4			# grab next array index
 		primetest:
 			lw 		$t3,	0($t2)				# grab array[i]
-			slt		$t0,	$t1,	$s1			# i < 100
-			slt 	$t4,	$t3,	$s4			# array[i] < 1
+			slti	$t0,	$t1,	100			# i < 100
+			slti	$t4,	$t3,	1			# array[i] < 1
 			and		$t0,	$t0,	$t4			# array[i] == 0 && i < 100
 			bne		$t0,	$zero,	primeloop	# while (array[i] == 0 && i < 100)
 
-			addi	$s3,	$t1,	1			# prime = i + 1;
+			addi	$s1,	$t1,	1			# prime = i + 1;
 		# end of prime finding
 
 
 	maintest:
-		slt		$t0,	$s3,	$s1			# prime < 100
+		slti	$t0,	$s1,	100			# prime < 100
 		bne		$t0,	$zero,	mainloop	# while (prime < 100)
 	# end main
 
