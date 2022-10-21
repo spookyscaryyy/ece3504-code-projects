@@ -11,32 +11,37 @@
 # t6 = rbit
 # t7 = function result and conditional
 
+# s0 = pal_count
+# s1 = word
+# s2 = break cond for while loop
+# s3 = conditional
+
 # IDEALLY only use these insts: 
 # sll (only by 1), srl (only by 1), sub, subi, slt, or, ori, 
 # beq,  bne,  add,  addi,  and,  andi,  lui
+
 main: 
- 
-    addi $a0, $0,  0
-    jal  isBinPal
-    or   $s0, $v0, $0
-
-    addi $a0, $0,  5
-    jal  isBinPal
-    or   $s1, $v0, $0
-
-    lui  $a0, 0x000F
-    ori  $a0, $a0, 0x462F
-    jal  isBinPal
-    or   $s2, $v0, $0
-
-    addi $a0, $0,  6
-    jal  isBinPal
-    or   $s3, $v0, $0
-
-# s0 = 0
-# s1 = 1
-# s2 = 1
-# s3 = 0
+    add  $s0, $0,  $0
+    lui  $s1, 0x000F
+    ori  $s1, $s1, 0x4240 
+    addi $s2, $s2, 6        # load constants
+    beq  $0,  $0,  mainWhileTest
+    mainWhileBody:
+        or   $a0, $s1, $0
+        jal  isBinPal
+        beq  $v0, $0, notPal
+        or   $a0, $s1, $0
+        ori  $v0, $0,  1
+        syscall             # print word
+        ori  $a0, $0,  10
+        ori  $v0, $0,  11
+        syscall             # print new line character
+        addi $s0, $s0, 1
+    notPal:
+        addi $s1, $s1, 1
+    mainWhileTest:
+        slt  $s3, $s0, $s2
+        bne  $s3, $0,  mainWhileBody
 
     ori  $v0, $0,  10 
     syscall 
@@ -64,11 +69,12 @@ isBinPal:
     forBody:
         and  $t5, $t1, $t0
         and  $t6, $t2, $t0      # set lbit and rbit
-        beq  $t5, $0,  lBitZ    # (lbit == 0)
-        beq  $t6, $0,  success    # (rbit == 0)
-        beq  $0,  $0,  False
-    lBitZ:
-        bne  $t6, $0,  success  # (rbit != 0)
+
+        beq  $t5, $0,  rBitChk  # (lbit == 0) -> check (rbit != 0)
+        beq  $t6, $0,  False    # (rbit == 0 && lbit != 0) -> failure
+        beq  $0,  $0,  success  # does not trigger any failure conditions
+    rBitChk:
+        bne  $t6, $0,  False    # (rbit != 0 && lbit == 0) -> failure
     success:
         srl  $t1, $t1, 1
         sll  $t2, $t2, 1    # bit shifts
@@ -83,30 +89,3 @@ isBinPal:
     False:
         add  $v0, $0, $0
         jr   $ra        # return false
-
-#bool isBinPal(uint32_t word) 
-#{ 
- 
-#}
-
-# completed section
-
-#    if (word == 0) 
-#        return false; 
-#    uint32_t lmask = 0x80000000; 
-#    uint32_t rmask = 0x00000001; 
-#    uint32_t width = 32; 
-#    while ((word & lmask) == 0) { 
-#        lmask >>= 1; 
-#        width--; 
-#    }
-#    for (uint32_t i = 0; i < (width / 2); i++) { 
-#        uint32_t lbit = lmask & word; 
-#        uint32_t rbit = rmask & word; 
-#        if (((lbit == 0) && (rbit != 0)) || 
-#            ((lbit != 0) && (rbit == 0))) 
-#            return false; 
-#        lmask >>= 1; 
-#        rmask <<= 1; 
-#    } 
-#    return true; 
