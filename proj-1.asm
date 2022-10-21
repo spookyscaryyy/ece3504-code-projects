@@ -1,64 +1,88 @@
 	.data
-	.align		# align on word boundary
-A:
+	.align	2	# align on word boundary
+Array:	
 	.space 400	# allocate 100 words (400 bytes)
 
 	.text
 	.globl main
 
-# s7 = -1
+# REGISTER MAPPINGS
+# any unlisted registers are unused
+
+# s0 = array pointer
+# s1 = current selected prime number
+
+# t0 = boolean for any while loops
+# t1 = iterator
+# t2 = array indexing
+# t3 = array grabbing
+# t4 = 2nd boolean
+
+# uses a while loop to sieve, then find the next prime number.
+# exits when the next prime number cannot be found within the array
 main:
 	#main execution starts here
-	andi	$s7,	$s7,	$zero
-	addi	$s7,	$s7,	-1
+	la		$s0,	Array
+	addi	$s1,	$zero,	2
+
+	# initialize array to 1-100
+	addi 	$t2,	$s0,	0				# copy array pointer
+	addi	$t1,	$zero,	1				# i = 1
+
+	bne		$zero,	$s1,	inittest		# enter loop
+	initloop:
+		sw 	$t1,	0($t2)				# grab array[i]
+		addi 	$t2,	$t2,	4			# prepare for indexing - next array element
+		addi 	$t1,	$t1,	1			# # i++;
+	inittest:
+		slti	$t0,	$t1,	101			# i <= 100
+		bne 	$t0,	$zero,	initloop		# while (i <= 100)
 	
-	bne	$zero,	$s7,	test
-mainloop:
-	# body of while loop
-	# jump to sieve
-	# jump to findPrime
-maintest:
-	slt	$t0,	$t0,	$s7
-	bne	$t0,	$zero,	startloop
-# end main
+		bne		$zero,	$s1,	maintest	# enter loop
+	mainloop:
+		# body of main while loop
+
+		# start of sieve
+			sll	$t1,	$s1,	1		# i = prime * 2
+			bne	$zero,	$s1,	sievetest	# enter loop
+		sieveloop:
+			# body of sieve while loop
+			addi	$t2,	$t1,	-1			# i - 1
+			sll 	$t2,	$t2,	2			# prepare for indexing
+			add	$t2,	$s0,	$t2			# array[i-1]
+			sw	$zero,	0($t2) 				# array[i-1] = 0
+			add	$t1,	$t1,	$s1			# i = i + prime
+		sievetest:
+			slti	$t0,	$t1,	101			# i <= 100
+			bne	$t0,	$zero,	sieveloop		# while (i <= 100)
+		# end of sieve
 
 
-# t0 = iterator
-# t1 = array size value
-# t9 = loop boolean
-# v0 = point to sieve array
-# v1 = current max prime
-sieve:
-	# sieve function, filters out the multiple of the current testing prime in $v1
-	and	$t0,	$t0,	$zero
-	and	$t0,	$t0,	$v1
-	bne	$s7,	$zero,	sievetest
-sieveloop:
-	
-	addi	$t0,	$t0,	1
-sievetest:
-	slt	$t9,	$t0,	$t1
-	bne	$t9,	$zero,	sieveloop
-# end sieve
+		# start of prime finding
+			addi	$t1,	$s1,	0			# i = 0 + prime
+			addi	$t2,	$t1,	0			# copy iterator
+			sll 	$t2,	$t2,	2			# prepare for indexing
+			add	$t2,	$s0,	$t2			# array[i] index
+			bne 	$zero,	$s1,	primetest		# enter loop
+		primeloop:
+			addi	$t1,	$t1,	1			# i++;
+			addi	$t2,	$t2,	4			# grab next array index
+		primetest:
+			lw 	$t3,	0($t2)				# grab array[i]
+			slti	$t0,	$t1,	100			# i < 100
+			slti	$t4,	$t3,	1			# array[i] < 1
+			and	$t0,	$t0,	$t4			# array[i] == 0 && i < 100
+			bne	$t0,	$zero,	primeloop		# while (array[i] == 0 && i < 100)
 
-# t0 = iterator
-# t1 = array size value
-# t9 = loop boolean
-# v0 = pointer to sieve array
-# v1 = current max prime
-findPrime:
-	# find prime function, find the next prime number to sieve out of the array
-	and	$t0,	$t0,	$zero
-	add	$t0,	$t0,	$v1
-	bne	$s7,	$zero,	primetest
-primeloop:
-	#prime loop
-	addi	$t0,	$t0,	1
-primetest:
-	slt	$t9,	$t0,	$t1
-	bne	$t9,	$zero,	primeloop
+			addi	$s1,	$t1,	1			# prime = i + 1;
+		# end of prime finding
 
-# end findPrime
+
+	maintest:
+		slti	$t0,	$s1,	100			# prime < 100
+		bne	$t0,	$zero,	mainloop		# while (prime < 100)
+	# end main
+
 	li $v0, 10	# exit program
 	syscall
 
